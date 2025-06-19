@@ -17,10 +17,11 @@ export const makeManualCall = async (req: Request, res: Response): Promise<void>
   }
 
   try {
+    // Use /api/twilio/connect for manual call, no room param (defaults to ZifyRoom)
     const call = await client.calls.create({
       from,
       to,
-      url: `${process.env.BASE_URL}/api/twilio/connect`, // serves conference TwiML
+      url: `${process.env.BASE_URL}/api/twilio/connect`,
       statusCallback: `${process.env.BASE_URL}/api/twilio/events`,
       statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
       statusCallbackMethod: "POST",

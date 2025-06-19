@@ -82,7 +82,7 @@ export const handleIncomingCall = (req: Request, res: Response): void => {
 
 export const connectCall = (req: Request, res: Response): void => {
   try {
-    // Accept room from query or body
+    // Accept room from query or body, or use default for manual call
     const roomName = req.query.room || req.body?.room || req.body?.conference || "ZifyRoom";
     console.log(`📞 [connectCall] Request to join room: ${roomName}`);
     console.log("[connectCall] req.query:", req.query);
@@ -90,7 +90,6 @@ export const connectCall = (req: Request, res: Response): void => {
 
     const response = new twiml.VoiceResponse();
     const dial = response.dial({ answerOnBridge: true });
-
     dial.conference(
       {
         startConferenceOnEnter: true,
