@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { twiml } from "../utils/twilioClient";
 import twilio from "twilio";
 import { dialNextNumber, bulkCallState } from "./bulkcallController";
-import * as bulkCallController from "./bulkcallController";
 
 // POST /api/twilio/bridge
 // ✅ This bridges Twilio call directly to the customer
@@ -39,20 +38,17 @@ export const callStatusWebhook = (req: Request, res: Response): void => {
   console.log("📞 SID:", CallSid, "Status:", CallStatus);
   console.log("👤 From:", From, "➡️ To:", To);
 
-  // 🆕 Event-driven: On completed/failed/busy/no-answer, update state and dial next
+  // Fix: always match by sid only
   if (["completed", "failed", "busy", "no-answer"].includes((CallStatus || "").toLowerCase())) {
-    // Find the current in-progress call and update its status
-    const idx = bulkCallState.results.findIndex((r: any) => r && r.sid === CallSid && r.status === "in-progress");
+    const idx = bulkCallState.results.findIndex((r: any) => r && r.sid === CallSid);
     if (idx !== -1) {
       bulkCallState.results[idx].status = CallStatus.toLowerCase() === "completed" ? "success" : "failed";
       bulkCallState.currentIndex = idx + 1;
     }
-    // Trigger next call if not paused/stopped
     setTimeout(() => {
       dialNextNumber();
     }, 1000);
   } else if (CallStatus.toLowerCase() === 'in-progress') {
-    // Set status to 'in-progress'
     const idx = bulkCallState.results.findIndex((r: any) => r && r.sid === CallSid);
     if (idx !== -1) {
       bulkCallState.results[idx].status = 'in-progress';
@@ -88,10 +84,7 @@ export const connectCall = (req: Request, res: Response): void => {
   try {
     // Accept room from query or body
     const roomName = req.query.room || req.body?.room || req.body?.conference || "ZifyRoom";
-    // Identify if this is a customer or browser/agent join
-    const isCustomer = !!req.body?.Called || !!req.body?.To; // Twilio sends these for customer leg
-    const who = isCustomer ? `CUSTOMER (${req.body?.Called || req.body?.To})` : `BROWSER/AGENT`;
-    console.log(`\uD83D\uDD0A [connectCall] ${who} joining room: ${roomName}`);
+    console.log(`📞 [connectCall] Request to join room: ${roomName}`);
     console.log("[connectCall] req.query:", req.query);
     console.log("[connectCall] req.body:", req.body);
 
@@ -145,4 +138,5 @@ export const joinConference = (req:Request, res:Response) => {
   res.type("text/xml");
   res.send(response.toString());
 };
+
 
